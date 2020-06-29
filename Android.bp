@@ -63,6 +63,11 @@ cc_defaults {
     ldflags: ["-Wl,--gc-sections"],
 
     product_variables: {
+        aosp: {
+            target_uses_prebuilt_dynamic_partitions: {
+                cflags: ["-DTARGET_USES_PREBUILT_DYNAMIC_PARTITIONS"],
+            },
+        },
         pdk: {
             enabled: false,
         },
