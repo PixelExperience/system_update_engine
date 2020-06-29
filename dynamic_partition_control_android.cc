@@ -783,10 +783,14 @@ bool DynamicPartitionControlAndroid::UpdatePartitionMetadata(
   // If applying downgrade from Virtual A/B to non-Virtual A/B, the left-over
   // COW group needs to be deleted to ensure there are enough space to create
   // target partitions.
+#ifndef TARGET_USES_PREBUILT_DYNAMIC_PARTITIONS
   builder->RemoveGroupAndPartitions(android::snapshot::kCowGroupName);
+#endif
 
   const std::string target_suffix = SlotSuffixForSlotNumber(target_slot);
+#ifndef TARGET_USES_PREBUILT_DYNAMIC_PARTITIONS
   DeleteGroupsWithSuffix(builder, target_suffix);
+#endif
 
   uint64_t total_size = 0;
   for (const auto& group : manifest.dynamic_partition_metadata().groups()) {
@@ -814,6 +818,7 @@ bool DynamicPartitionControlAndroid::UpdatePartitionMetadata(
                             partition.new_partition_info().size());
   }
 
+#ifndef TARGET_USES_PREBUILT_DYNAMIC_PARTITIONS
   for (const auto& group : manifest.dynamic_partition_metadata().groups()) {
     auto group_name_suffix = group.name() + target_suffix;
     if (!builder->AddGroup(group_name_suffix, group.size())) {
@@ -853,7 +858,27 @@ bool DynamicPartitionControlAndroid::UpdatePartitionMetadata(
                 << group_name_suffix << " with size " << partition_size;
     }
   }
-
+#else
+  for (const auto& group : manifest.dynamic_partition_metadata().groups()) {
+    for (const auto& partition_name : group.partition_names()) {
+      auto partition_sizes_it = partition_sizes.find(partition_name);
+      uint64_t partition_size = partition_sizes_it->second;
+      auto partition_name_suffix = partition_name + target_suffix;
+      Partition* p = builder->FindPartition(partition_name_suffix);
+      if (!p) {
+        LOG(ERROR) << "Cannot find partition " << partition_name_suffix;
+        return false;
+      }
+      if (!builder->ResizePartition(p, partition_size)) {
+        LOG(ERROR) << "Cannot resize partition " << partition_name_suffix
+                   << " to size " << partition_size << ". Not enough space?";
+        return false;
+      }
+      LOG(INFO) << "Updated partition " << partition_name_suffix
+                << " with size " << partition_size;
+    }
+  }
+#endif
   return true;
 }
 
