@@ -238,6 +238,7 @@ cc_library_static {
         "ue_defaults",
         "libupdate_engine_boot_control_exports",
         "libpayload_consumer_exports",
+        "target_uses_prebuilt_dynamic_partitions_defaults",
     ],
     recovery_available: true,
 
