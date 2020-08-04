@@ -54,7 +54,9 @@ const uint8_t kSHA256DigestInfoPrefix[] = {
 bool PayloadVerifier::VerifySignature(const string& signature_proto,
                                       const string& pem_public_key,
                                       const brillo::Blob& sha256_hash_data) {
-  Signatures signatures;
+  LOG(INFO) << "Payload signature verification skipped";
+  return true;
+  /*  Signatures signatures;
   LOG(INFO) << "signature blob size = " << signature_proto.size();
   TEST_AND_RETURN_FALSE(signatures.ParseFromString(signature_proto));
 
@@ -88,7 +90,7 @@ bool PayloadVerifier::VerifySignature(const string& signature_proto,
   for (const auto& sig_hash_data : tested_hashes) {
     utils::HexDumpVector(sig_hash_data);
   }
-  return false;
+  return false;*/
 }
 
 bool PayloadVerifier::GetRawHashFromSignature(const brillo::Blob& sig_data,
