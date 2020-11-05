@@ -30,13 +30,13 @@
 #include <brillo/message_loops/base_message_loop.h>
 #include <xz.h>
 
+#include "update_engine/common/download_action.h"
 #include "update_engine/common/fake_boot_control.h"
 #include "update_engine/common/fake_hardware.h"
 #include "update_engine/common/file_fetcher.h"
 #include "update_engine/common/prefs.h"
 #include "update_engine/common/terminator.h"
 #include "update_engine/common/utils.h"
-#include "update_engine/payload_consumer/download_action.h"
 #include "update_engine/payload_consumer/filesystem_verifier_action.h"
 #include "update_engine/payload_consumer/payload_constants.h"
 #include "update_engine/payload_generator/delta_diff_generator.h"
@@ -183,8 +183,11 @@ bool ApplyPayload(const string& payload_file,
   install_plan.source_slot =
       config.is_delta ? 0 : BootControlInterface::kInvalidSlot;
   install_plan.target_slot = 1;
-  payload.type =
-      config.is_delta ? InstallPayloadType::kDelta : InstallPayloadType::kFull;
+  // For partial updates, we always write kDelta to the payload. Make it
+  // consistent for host simulation.
+  payload.type = config.is_delta || config.is_partial_update
+                     ? InstallPayloadType::kDelta
+                     : InstallPayloadType::kFull;
   payload.size = utils::FileSize(payload_file);
   // TODO(senj): This hash is only correct for unsigned payload, need to support
   // signed payload using PayloadSigner.
@@ -576,6 +579,10 @@ int Main(int argc, char** argv) {
     }
   }
 
+  if (FLAGS_is_partial_update) {
+    payload_config.is_partial_update = true;
+  }
+
   if (!FLAGS_in_file.empty()) {
     return ApplyPayload(FLAGS_in_file, payload_config) ? 0 : 1;
   }
@@ -602,10 +609,6 @@ int Main(int argc, char** argv) {
     CHECK(store.Load(base::FilePath(FLAGS_dynamic_partition_info_file)));
     CHECK(payload_config.target.LoadDynamicPartitionMetadata(store));
     CHECK(payload_config.target.ValidateDynamicPartitionMetadata());
-  }
-
-  if (FLAGS_is_partial_update) {
-    payload_config.is_partial_update = true;
   }
 
   CHECK(!FLAGS_out_file.empty());
