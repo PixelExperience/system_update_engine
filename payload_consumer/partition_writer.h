@@ -48,6 +48,9 @@ class PartitionWriter {
   [[nodiscard]] virtual bool Init(const InstallPlan* install_plan,
                                   bool source_may_exist);
 
+  // Close partition writer, when calling this function there's no guarantee
+  // that all |InstallOperations| are sent to |PartitionWriter|. This function
+  // will be called even if we are pausing/aborting the update.
   int Close();
 
   // These perform a specific type of operation and return true on success.
@@ -72,9 +75,16 @@ class PartitionWriter {
       size_t count);
   [[nodiscard]] virtual bool Flush();
 
+  // |DeltaPerformer| calls this when all Install Ops are sent to partition
+  // writer. No |Perform*Operation| methods will be called in the future, and
+  // the partition writer is expected to be closed soon.
+  [[nodiscard]] virtual bool FinishedInstallOps() { return true; }
+
  protected:
   friend class PartitionWriterTest;
   FRIEND_TEST(PartitionWriterTest, ChooseSourceFDTest);
+
+  bool OpenSourcePartition(uint32_t source_slot, bool source_may_exist);
 
   bool OpenCurrentECCPartition();
   // For a given operation, choose the source fd to be used (raw device or error

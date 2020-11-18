@@ -1265,6 +1265,7 @@ FileDescriptorPtr DynamicPartitionControlAndroid::OpenCowReader(
   if (cow_writer == nullptr) {
     return nullptr;
   }
+  cow_writer->InitializeAppend(kEndOfInstallLabel);
   return cow_writer->OpenReader();
 }
 
@@ -1283,4 +1284,14 @@ bool DynamicPartitionControlAndroid::MapAllPartitions() {
   return snapshot_->MapAllSnapshots(kMapSnapshotTimeout);
 }
 
+bool DynamicPartitionControlAndroid::IsDynamicPartition(
+    const std::string& partition_name) {
+  if (dynamic_partition_list_.empty() &&
+      GetDynamicPartitionsFeatureFlag().IsEnabled()) {
+    CHECK(ListDynamicPartitionsForSlot(source_slot_, &dynamic_partition_list_));
+  }
+  return std::find(dynamic_partition_list_.begin(),
+                   dynamic_partition_list_.end(),
+                   partition_name) != dynamic_partition_list_.end();
+}
 }  // namespace chromeos_update_engine
