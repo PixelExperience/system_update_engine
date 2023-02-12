@@ -76,6 +76,4 @@ interface IUpdateEngine {
    * but needs reboot). DEVICE_CORRUPTED for permanent errors.
    */
   void cleanupSuccessfulUpdate(IUpdateEngineCallback callback);
-  /** @hide */
-  void setPerformanceMode(in boolean enable);
 }
